@@ -21,6 +21,7 @@ type ScreenProps = PropsWithChildren<{
   scroll?: boolean;
   contentContainerStyle?: StyleProp<ViewStyle>;
   style?: StyleProp<ViewStyle>;
+  overlay?: ReactNode;
 }>;
 
 /**
@@ -33,6 +34,7 @@ export function Screen({
   scroll = true,
   contentContainerStyle,
   style,
+  overlay,
   children,
 }: ScreenProps) {
   const { colors } = useTheme();
@@ -56,6 +58,7 @@ export function Screen({
         </View>
       )}
       {actions && <ScreenActions>{actions}</ScreenActions>}
+      {overlay}
     </View>
   );
 }

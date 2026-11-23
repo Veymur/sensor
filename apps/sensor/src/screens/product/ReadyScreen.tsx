@@ -22,10 +22,16 @@ import { Icon } from "../../ui/Icon";
 import { AppBar, Screen } from "../../ui/Screen";
 import { useTheme } from "../../ui/Theme";
 import { Eyebrow, Unit } from "../../ui/Typography";
-import { fonts } from "../../ui/tokens";
+import { fonts, spacing } from "../../ui/tokens";
 import { useProduct } from "../../product/ProductContext";
 import { routePermissionGranted } from "../../recorder/permissions";
-import { locationOffForRequestedRoute } from "../../recorder/routeAvailability";
+import {
+  locationOffForRequestedRoute,
+  routeConfirmation,
+  routeConfirmationDurationMs,
+  routeConfirmationMessage,
+} from "../../recorder/routeAvailability";
+import { Toast } from "../../ui/Toast";
 import { formatAge, withoutErrorCode } from "../../product/sessionMath";
 import {
   Muted,
@@ -86,6 +92,8 @@ export function ReadyScreen({
   const [locationDialog, setLocationDialog] = useState(false);
   const latestLocationEnabled = useRef<boolean | null>(null);
   latestLocationEnabled.current = snapshot?.locationEnabled ?? null;
+  const [routeToast, setRouteToast] = useState(false);
+  const routeToastAfterLocationOn = useRef(false);
   const [recoveredDismissed, setRecoveredDismissed] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   useEffect(() => {
@@ -94,6 +102,25 @@ export function ReadyScreen({
   useEffect(() => {
     if (snapshot?.locationEnabled !== false) setLocationDialog(false);
   }, [snapshot?.locationEnabled]);
+  useEffect(() => {
+    if (!routeRequested) routeToastAfterLocationOn.current = false;
+    if (
+      routeRequested &&
+      routeToastAfterLocationOn.current &&
+      snapshot?.locationEnabled === true
+    ) {
+      routeToastAfterLocationOn.current = false;
+      setRouteToast(true);
+    }
+  }, [routeRequested, snapshot?.locationEnabled]);
+  useEffect(() => {
+    if (!routeToast) return;
+    const timer = setTimeout(
+      () => setRouteToast(false),
+      routeConfirmationDurationMs,
+    );
+    return () => clearTimeout(timer);
+  }, [routeToast]);
   if (!snapshot) return null;
   const busy = pending !== null;
   const connected = snapshot.connectedDeviceId !== null;
@@ -125,17 +152,32 @@ export function ReadyScreen({
     const granted = await routePermissionGranted();
     setRouteDenied(!granted);
     await rememberRoute(granted);
-    if (locationOffForRequestedRoute(granted, latestLocationEnabled.current))
-      setLocationDialog(true);
+    const confirmation = routeConfirmation(
+      granted,
+      latestLocationEnabled.current,
+    );
+    routeToastAfterLocationOn.current = confirmation === "after_location_on";
+    if (confirmation === "after_location_on") setLocationDialog(true);
+    if (confirmation === "now") setRouteToast(true);
   };
   const disableRoute = async () => {
     await controller.setRoute(false);
     setRouteDenied(false);
     setLocationDialog(false);
+    setRouteToast(false);
+    routeToastAfterLocationOn.current = false;
     await rememberRoute(false);
   };
   return (
     <Screen
+      overlay={
+        <Toast
+          visible={routeToast}
+          icon="location"
+          message={routeConfirmationMessage}
+          bottom={spacing.gutter}
+        />
+      }
       appBar={
         <AppBar
           title="Record"

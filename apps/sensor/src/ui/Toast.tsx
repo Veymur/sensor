@@ -9,10 +9,12 @@ export function Toast({
   message,
   icon = "check",
   visible = true,
+  bottom,
 }: {
   message: string;
   icon?: IconName;
   visible?: boolean;
+  bottom?: number;
 }) {
   const { colors } = useTheme();
   const insets = useInsets();
@@ -23,7 +25,7 @@ export function Toast({
       style={[
         styles.toast,
         {
-          bottom: insets.bottom + 88,
+          bottom: bottom ?? insets.bottom + 88,
           backgroundColor: colors.ink,
           shadowColor: colors.ink,
         },

@@ -78,3 +78,16 @@ test("route label follows recording, pause and disabled route", () => {
     false,
   );
 });
+
+test("route confirmation waits for location and never follows a denied permission", () => {
+  assert.equal(m.routeConfirmation(true, true), "now");
+  assert.equal(m.routeConfirmation(true, null), "now");
+  assert.equal(m.routeConfirmation(true, false), "after_location_on");
+  assert.equal(m.routeConfirmation(false, true), "none");
+  assert.equal(m.routeConfirmation(false, false), "none");
+  assert.equal(
+    m.routeConfirmationMessage,
+    "Route will be recorded on this phone",
+  );
+  assert.equal(m.routeConfirmationDurationMs, 3200);
+});
