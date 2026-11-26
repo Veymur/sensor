@@ -6,7 +6,6 @@ import {
   Detail,
   Dialog,
   Label,
-  Mark,
   Status,
   Warning,
 } from "../../ui/components";
@@ -103,12 +102,6 @@ const reasonText: Record<string, string> = {
   interactive_calculation_limit:
     "This session is too long to summarise on the phone right now. Its data is kept.",
 };
-const stateText = (state: string) =>
-  state === "completed"
-    ? "Saved on this phone"
-    : state === "interrupted"
-      ? "Interrupted · saved part kept on this phone"
-      : "Recording is not finished yet";
 const toneForRange = (range: UserRange): MeterTone =>
   range.id === "below" ? "dusk" : range.id === "above" ? "ember" : "tide";
 
@@ -272,7 +265,6 @@ export function SummaryScreen({
           />
         )}
       </View>
-      <Mark icon="on-phone" label={stateText(session.state)} />
       {summary?.interrupted_tail_unknown && (
         <Warning
           title="The end of this recording is unknown"
