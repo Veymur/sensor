@@ -1,35 +1,34 @@
 # Veymur Sensor
 
-Veymur Sensor — Android-приложение для записи пульса с Polar Verity Sense.
-Приложение сохраняет тренировки на телефоне и может записывать GPS-маршрут.
-Завершённые тренировки доступны в разделе History.
+Veymur Sensor is an Android app that records heart rate from a Polar Verity Sense
+sensor. It saves workouts on your phone and can record a GPS route. Completed
+workouts appear in History.
 
-## Скачать на Android
+## Download for Android
 
-[Скачать APK](https://github.com/Veymur/sensor/releases/latest/download/veymur-sensor.apk) ·
-[Все релизы](https://github.com/Veymur/sensor/releases)
+[Download APK](https://github.com/Veymur/sensor/releases/latest/download/veymur-sensor.apk) ·
+[All releases](https://github.com/Veymur/sensor/releases)
 
-Прямая ссылка заработает после публикации релиза с APK. Для установки нужен
-Android 13 или новее (arm64-v8a или x86_64). APK содержит всё необходимое
-для запуска без Metro.
+The direct download becomes available once a release includes the APK. The app
+requires Android 13 or later (arm64-v8a or x86_64) and runs without Metro.
 
-Сборка для тестирования подписана отладочным ключом. Если Android отклоняет
-обновление из-за несовпадения подписи, сначала сохраните нужные записи
-из установленной версии.
+The test build uses a debug signing key. If Android rejects an update because
+the signatures differ, export any recordings you want to keep from the installed
+version first.
 
-## Как записать тренировку
+## Record a workout
 
-1. Разрешите поиск Bluetooth-устройств и выберите свой датчик.
-2. При необходимости включите запись GPS-маршрута и выдайте разрешение на геолокацию.
-3. Начните тренировку. Во время записи можно поставить её на паузу и продолжить.
-4. Завершите тренировку и откройте History, чтобы найти сохранённую запись.
+1. Allow Bluetooth scanning and select your sensor.
+2. To record a GPS route, enable route recording and grant location access.
+3. Start your workout. You can pause and resume recording at any time.
+4. Finish the workout and open History to find the saved recording.
 
-## Разработка
+## Development
 
-- [Установка зависимостей и сборка приложения](apps/sensor/README.md)
-- [Нативный прототип на Kotlin](apps/sensor-stage0/README.md)
-- [Проверка совместимости](docs/compatibility.md)
+- [Install dependencies and build the app](apps/sensor/README.md)
+- [Native Kotlin prototype](apps/sensor-stage0/README.md)
+- [Compatibility](docs/compatibility.md)
 
-Обновить APK в GitHub Releases можно тегом вида `sensor-v0.0.1` на нужном
-коммите. GitHub Actions соберёт автономный APK, проверит его и опубликует
-файл `veymur-sensor.apk` как вложение релиза.
+To publish a new APK, tag the target commit with a tag such as `sensor-v0.0.1`
+and push the tag. GitHub Actions builds and verifies the standalone APK and
+attaches `veymur-sensor.apk` to the release.
