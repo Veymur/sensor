@@ -229,23 +229,29 @@ export function Unit({
   );
 }
 
+const pulseNumberFont = {
+  beat: fonts.displayPulse,
+  fresh: fonts.displayLight,
+  stale: fonts.displayThin,
+} as const;
+
 /** Large live pulse numeral; the face changes with data freshness. */
 export function PulseNumber({
   state = "fresh",
   style,
   ...props
-}: TextVariantProps & { state?: "fresh" | "stale" }) {
+}: TextVariantProps & { state?: "beat" | "fresh" | "stale" }) {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const size = Math.min(144, Math.max(80, width * 0.3));
   return (
     <Text
       {...props}
+      maxFontSizeMultiplier={1.25}
       style={[
         {
           color: state === "stale" ? colors["ink-3"] : colors.ink,
-          fontFamily:
-            state === "fresh" ? fonts.displayPulse : fonts.displayThin,
+          fontFamily: pulseNumberFont[state],
           fontSize: size,
           lineHeight: size * 0.92,
           letterSpacing: size * -0.02,

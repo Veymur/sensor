@@ -21,6 +21,7 @@ type ScreenProps = PropsWithChildren<{
   scroll?: boolean;
   contentContainerStyle?: StyleProp<ViewStyle>;
   style?: StyleProp<ViewStyle>;
+  overlay?: ReactNode;
 }>;
 
 /**
@@ -33,6 +34,7 @@ export function Screen({
   scroll = true,
   contentContainerStyle,
   style,
+  overlay,
   children,
 }: ScreenProps) {
   const { colors } = useTheme();
@@ -56,6 +58,7 @@ export function Screen({
         </View>
       )}
       {actions && <ScreenActions>{actions}</ScreenActions>}
+      {overlay}
     </View>
   );
 }
@@ -78,13 +81,19 @@ export function AppBar({
       {typeof title === "string" ? (
         <Text
           accessibilityRole="header"
-          numberOfLines={1}
+          numberOfLines={2}
           style={[styles.appBarTitle, { color: colors.ink }, titleStyle]}
         >
           {title}
         </Text>
       ) : (
-        <View style={styles.appBarTitleNode}>{title}</View>
+        <View
+          accessible
+          accessibilityRole="header"
+          style={styles.appBarTitleNode}
+        >
+          {title}
+        </View>
       )}
       {right}
     </View>
@@ -198,9 +207,14 @@ export function TabBar({ items }: { items: readonly TabBarItem[] }) {
         >
           {item.icon && (
             <View
+              collapsable={false}
               style={[
                 styles.tabIcon,
-                item.active && { backgroundColor: colors["tide-wash"] },
+                {
+                  backgroundColor: item.active
+                    ? colors["tide-wash"]
+                    : "transparent",
+                },
               ]}
             >
               {item.icon}

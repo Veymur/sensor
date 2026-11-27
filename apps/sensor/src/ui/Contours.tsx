@@ -1,7 +1,9 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { StyleProp, ViewStyle } from "react-native";
 import Svg, { Path } from "react-native-svg";
+import { contourSettleFrame, type ContourMotion } from "../product/pulseMotion";
 import { useTheme } from "./Theme";
+import { useReducedMotion } from "./useReducedMotion";
 
 type Point = readonly [number, number];
 
@@ -59,6 +61,18 @@ function makeContours({
   });
 }
 
+type ContourArtProps = {
+  rings?: number;
+  baseR?: number;
+  gap?: number;
+  size?: number;
+  seed?: number;
+  wobble?: number;
+  energy?: number;
+  phase?: number;
+  style?: StyleProp<ViewStyle>;
+};
+
 export function ContourArt({
   rings = 9,
   baseR = 30,
@@ -69,17 +83,7 @@ export function ContourArt({
   energy = 1,
   phase = 0,
   style,
-}: {
-  rings?: number;
-  baseR?: number;
-  gap?: number;
-  size?: number;
-  seed?: number;
-  wobble?: number;
-  energy?: number;
-  phase?: number;
-  style?: StyleProp<ViewStyle>;
-}) {
+}: ContourArtProps) {
   const { colors } = useTheme();
   const paths = useMemo(
     () =>
@@ -116,4 +120,51 @@ export function ContourArt({
       ))}
     </Svg>
   );
+}
+
+function useSettledContourMotion(
+  target: ContourMotion,
+  reduceMotion: boolean,
+): ContourMotion {
+  const [shown, setShown] = useState(target);
+  const shownRef = useRef(target);
+  useEffect(() => {
+    const from = shownRef.current;
+    if (from.phase === target.phase && from.energy === target.energy) return;
+    const show = (motion: ContourMotion) => {
+      shownRef.current = motion;
+      setShown(motion);
+    };
+    let frame = 0;
+    const startedAtMs = Date.now();
+    const step = () => {
+      const next = reduceMotion
+        ? { ...target, done: true }
+        : contourSettleFrame(from, target, Date.now() - startedAtMs);
+      show({ phase: next.phase, energy: next.energy });
+      if (!next.done) frame = requestAnimationFrame(step);
+    };
+    frame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frame);
+  }, [target, reduceMotion]);
+  return shown;
+}
+
+export function LiveContourArt({
+  beatCount,
+  phaseStep,
+  energy,
+  ...art
+}: Omit<ContourArtProps, "phase" | "energy"> & {
+  beatCount: number;
+  phaseStep: number;
+  energy: number;
+}) {
+  const reduceMotion = useReducedMotion();
+  const target = useMemo(
+    () => ({ phase: beatCount * phaseStep, energy }),
+    [beatCount, phaseStep, energy],
+  );
+  const motion = useSettledContourMotion(target, reduceMotion);
+  return <ContourArt {...art} phase={motion.phase} energy={motion.energy} />;
 }

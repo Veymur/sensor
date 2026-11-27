@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -17,16 +17,35 @@ import {
   Toggle,
   Warning,
 } from "../../ui/components";
-import { ContourArt } from "../../ui/Contours";
+import { LiveContourArt } from "../../ui/Contours";
+import { usePulseBeat } from "../../ui/usePulseBeat";
+import {
+  readyContourEnergy,
+  readyContourPhaseStep,
+  readyContourRestingEnergy,
+} from "../../product/pulseMotion";
 import { Icon } from "../../ui/Icon";
 import { AppBar, Screen } from "../../ui/Screen";
 import { useTheme } from "../../ui/Theme";
 import { Eyebrow, Unit } from "../../ui/Typography";
-import { fonts } from "../../ui/tokens";
+import { fonts, spacing } from "../../ui/tokens";
 import { useProduct } from "../../product/ProductContext";
 import { routePermissionGranted } from "../../recorder/permissions";
+import {
+  locationOffForRequestedRoute,
+  routeConfirmation,
+  routeConfirmationDurationMs,
+  routeConfirmationMessage,
+} from "../../recorder/routeAvailability";
+import { Toast } from "../../ui/Toast";
 import { formatAge, withoutErrorCode } from "../../product/sessionMath";
-import { Muted, OpenSettingsAction, rangesSummary } from "./shared";
+import {
+  Muted,
+  OpenBluetoothSettingsAction,
+  OpenLocationSettingsAction,
+  OpenSettingsAction,
+  rangesSummary,
+} from "./shared";
 
 function RangeRow({
   summary,
@@ -51,6 +70,7 @@ function RangeRow({
       </View>
       <Action
         title="Set up"
+        accessibilityLabel="Set up range alerts"
         size="sm"
         variant="secondary"
         block={false}
@@ -75,14 +95,54 @@ export function ReadyScreen({
   const { snapshot, controller, pending, routeRequested, error } = recorder;
   const [routeDialog, setRouteDialog] = useState(false);
   const [routeDenied, setRouteDenied] = useState(false);
+  const [locationDialog, setLocationDialog] = useState(false);
+  const latestLocationEnabled = useRef<boolean | null>(null);
+  latestLocationEnabled.current = snapshot?.locationEnabled ?? null;
+  const [routeToast, setRouteToast] = useState(false);
+  const routeToastAfterLocationOn = useRef(false);
   const [recoveredDismissed, setRecoveredDismissed] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   useEffect(() => {
     if (routeRequested) setRouteDenied(false);
   }, [routeRequested]);
+  useEffect(() => {
+    if (snapshot?.locationEnabled !== false) setLocationDialog(false);
+  }, [snapshot?.locationEnabled]);
+  useEffect(() => {
+    if (!routeRequested) routeToastAfterLocationOn.current = false;
+    if (
+      routeRequested &&
+      routeToastAfterLocationOn.current &&
+      snapshot?.locationEnabled === true
+    ) {
+      routeToastAfterLocationOn.current = false;
+      setRouteToast(true);
+    }
+  }, [routeRequested, snapshot?.locationEnabled]);
+  useEffect(() => {
+    if (!routeToast) return;
+    const timer = setTimeout(
+      () => setRouteToast(false),
+      routeConfirmationDurationMs,
+    );
+    return () => clearTimeout(timer);
+  }, [routeToast]);
+  const pulseBeat = usePulseBeat(
+    {
+      hr: snapshot?.hr ?? null,
+      hrAgeMs: snapshot?.hrAgeMs ?? null,
+      hrStatus: snapshot?.hrStatus ?? "missing",
+    },
+    snapshot?.connectedDeviceId != null,
+  );
   if (!snapshot) return null;
   const busy = pending !== null;
   const connected = snapshot.connectedDeviceId !== null;
+  const bluetoothOff = snapshot.bluetoothEnabled === false;
+  const locationOff = locationOffForRequestedRoute(
+    routeRequested,
+    snapshot.locationEnabled,
+  );
   const fresh = snapshot.hrStatus === "fresh" && snapshot.hr !== null;
   const starting = pending === "Start";
   const canStart = snapshot.ready && !busy && connected;
@@ -106,14 +166,32 @@ export function ReadyScreen({
     const granted = await routePermissionGranted();
     setRouteDenied(!granted);
     await rememberRoute(granted);
+    const confirmation = routeConfirmation(
+      granted,
+      latestLocationEnabled.current,
+    );
+    routeToastAfterLocationOn.current = confirmation === "after_location_on";
+    if (confirmation === "after_location_on") setLocationDialog(true);
+    if (confirmation === "now") setRouteToast(true);
   };
   const disableRoute = async () => {
     await controller.setRoute(false);
     setRouteDenied(false);
+    setLocationDialog(false);
+    setRouteToast(false);
+    routeToastAfterLocationOn.current = false;
     await rememberRoute(false);
   };
   return (
     <Screen
+      overlay={
+        <Toast
+          visible={routeToast}
+          icon="location"
+          message={routeConfirmationMessage}
+          bottom={spacing.gutter}
+        />
+      }
       appBar={
         <AppBar
           title="Record"
@@ -160,10 +238,13 @@ export function ReadyScreen({
           label={
             connected
               ? "Polar Verity Sense · connected"
-              : "Sensor not connected"
+              : bluetoothOff
+                ? "Bluetooth is off"
+                : "Sensor not connected"
           }
           tone={connected ? "tide" : "neutral"}
           icon={connected ? "check" : "bluetooth"}
+          style={{ maxWidth: "100%" }}
         />
         {connected && (
           <Mark
@@ -176,7 +257,17 @@ export function ReadyScreen({
           />
         )}
       </View>
-      {!connected && snapshot.selectedDeviceId && (
+      {bluetoothOff && (
+        <Banner
+          live
+          tone="dusk"
+          icon="bluetooth"
+          title="Bluetooth is off"
+          detail="Turn on Bluetooth to reconnect your sensor. The app is not searching or connecting while it is off."
+          action={<OpenBluetoothSettingsAction onError={setSaveError} />}
+        />
+      )}
+      {!connected && !bluetoothOff && snapshot.selectedDeviceId && (
         <Action
           title="Reconnect selected sensor"
           size="sm"
@@ -199,14 +290,20 @@ export function ReadyScreen({
             top: (stageHeight - artSize) / 2,
           }}
         >
-          <ContourArt
+          <LiveContourArt
             rings={9}
             baseR={110}
             gap={15}
             size={560}
             seed={14}
             wobble={0.07}
-            energy={0.7}
+            beatCount={pulseBeat.count}
+            phaseStep={readyContourPhaseStep}
+            energy={
+              pulseBeat.bpm === null
+                ? readyContourRestingEnergy
+                : readyContourEnergy(pulseBeat.bpm)
+            }
           />
         </View>
         <View style={{ width: discSize, height: discSize }}>
@@ -264,6 +361,7 @@ export function ReadyScreen({
             ]}
           >
             <Text
+              maxFontSizeMultiplier={1.3}
               style={[
                 styles.startTitle,
                 { color: canStart ? colors["on-solid"] : colors["ink-3"] },
@@ -272,6 +370,7 @@ export function ReadyScreen({
               {starting ? "Starting…" : "Start\nrecording"}
             </Text>
             <Text
+              maxFontSizeMultiplier={1.4}
               style={[
                 styles.startHint,
                 { color: canStart ? colors["on-solid"] : colors["ink-3"] },
@@ -334,6 +433,16 @@ export function ReadyScreen({
           action={<OpenSettingsAction />}
         />
       )}
+      {locationOff && (
+        <Banner
+          live
+          tone="dusk"
+          icon="location"
+          title="Location is off on this phone"
+          detail="The route will be unavailable until you turn it on."
+          action={<OpenLocationSettingsAction onError={setSaveError} />}
+        />
+      )}
       {connected && !fresh && (
         <Muted>
           You can start now. Time without a current pulse is marked as a gap.
@@ -364,6 +473,25 @@ export function ReadyScreen({
           }}
         />
       </Dialog>
+      <Dialog
+        visible={locationDialog && locationOff}
+        title="Turn on location?"
+        onClose={() => setLocationDialog(false)}
+        closeTitle="Not now"
+      >
+        <Label>
+          Location is off on this phone, so the route can’t be recorded. Turn it
+          on in settings, then come back.
+        </Label>
+        <Muted>If you don’t, pulse and history still work.</Muted>
+        <OpenLocationSettingsAction
+          prominent
+          onError={(message) => {
+            setLocationDialog(false);
+            setSaveError(message);
+          }}
+        />
+      </Dialog>
     </Screen>
   );
 }
@@ -371,6 +499,7 @@ export function ReadyScreen({
 const styles = StyleSheet.create({
   split: {
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 12,
@@ -422,6 +551,7 @@ const styles = StyleSheet.create({
   },
   pulseSplit: {
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "flex-start",
     justifyContent: "space-between",
     gap: 12,
