@@ -1,33 +1,36 @@
-import type { ExpoConfig } from 'expo/config';
+import type { ExpoConfig } from "expo/config";
 
 const config: ExpoConfig = {
-  name: 'Veymur Sensor',
-  slug: 'veymur-sensor',
-  version: '0.0.1',
-  platforms: ['android'],
-  icon: './assets/icon.png',
+  name: "Veymur Sensor",
+  slug: "veymur-sensor",
+  version: "0.0.1",
+  platforms: ["android"],
+  icon: "./assets/icon.png",
   android: {
-    package: 'com.veymur.sensor',
+    package: "com.veymur.sensor",
     allowBackup: false,
     adaptiveIcon: {
-      foregroundImage: './assets/adaptive-icon.png',
-      monochromeImage: './assets/monochrome-icon.png',
-      backgroundColor: '#0B6A63',
+      foregroundImage: "./assets/adaptive-icon.png",
+      monochromeImage: "./assets/monochrome-icon.png",
+      backgroundColor: "#0B6A63",
     },
   },
   plugins: [
-    'expo-dev-client',
-    ['expo-build-properties', {
-      android: {
-        minSdkVersion: 33,
-        compileSdkVersion: 36,
-        targetSdkVersion: 36,
-        buildToolsVersion: '36.0.0',
-        kotlinVersion: '2.3.20',
-        extraMavenRepos: ['https://jitpack.io'],
+    "expo-dev-client",
+    [
+      "expo-build-properties",
+      {
+        android: {
+          minSdkVersion: 33,
+          compileSdkVersion: 36,
+          targetSdkVersion: 36,
+          buildToolsVersion: "36.0.0",
+          kotlinVersion: "2.3.20",
+          extraMavenRepos: ["https://jitpack.io"],
+        },
       },
-    }],
-    './modules/veymur-recorder/plugin/withVeymurRecorder.cjs',
+    ],
+    "./modules/veymur-recorder/plugin/withVeymurRecorder.cjs",
   ],
 };
 export default config;

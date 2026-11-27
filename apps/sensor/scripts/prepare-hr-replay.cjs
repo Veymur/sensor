@@ -41,7 +41,9 @@ function readZipEntry(zipBuffer, entryName) {
       entryOffset + 46 + nameLength,
     );
     if (name === entryName) {
-      if (zipBuffer.readUInt32LE(localHeaderOffset) !== localFileHeaderSignature)
+      if (
+        zipBuffer.readUInt32LE(localHeaderOffset) !== localFileHeaderSignature
+      )
         throw new Error("Broken ZIP local header.");
       const dataStart =
         localHeaderOffset +
@@ -52,11 +54,15 @@ function readZipEntry(zipBuffer, entryName) {
       if (compressionMethod === 0) return data.toString("utf8");
       if (compressionMethod === 8)
         return zlib.inflateRawSync(data).toString("utf8");
-      throw new Error(`Unsupported ZIP compression method ${compressionMethod}.`);
+      throw new Error(
+        `Unsupported ZIP compression method ${compressionMethod}.`,
+      );
     }
     entryOffset += 46 + nameLength + extraLength + commentLength;
   }
-  throw new Error(`${entryName} is missing. Use a veymur-<session>.zip export.`);
+  throw new Error(
+    `${entryName} is missing. Use a veymur-<session>.zip export.`,
+  );
 }
 
 function parseCsvRows(text) {
@@ -108,7 +114,9 @@ function replayEventFromRecord(kind, payload, atMs) {
 }
 
 function convertSessionExport(zipPath) {
-  const rows = parseCsvRows(readZipEntry(fs.readFileSync(zipPath), "records.csv"));
+  const rows = parseCsvRows(
+    readZipEntry(fs.readFileSync(zipPath), "records.csv"),
+  );
   const [header, ...records] = rows;
   const column = (name) => {
     const index = header.indexOf(name);

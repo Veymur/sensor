@@ -1,5 +1,5 @@
 {
-  "name": "veymur-platform-tooling",
+  "name": "veymur-sensor-tooling",
   "private": true,
   "packageManager": "npm@10.9.7",
   "engines": {
