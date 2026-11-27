@@ -122,7 +122,9 @@ export class ReplayPlayback {
       inSession && this.lastHeartRate
         ? Math.max(
             0,
-            Math.round((now - this.lastHeartRate.receivedAtWallMs) * this.speed),
+            Math.round(
+              (now - this.lastHeartRate.receivedAtWallMs) * this.speed,
+            ),
           )
         : null;
     const fresh =

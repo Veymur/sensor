@@ -1,0 +1,37 @@
+name: Sensor APK release
+on:
+  push:
+    tags: ["sensor-v*"]
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/sensor
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: apps/sensor/.nvmrc
+          cache: npm
+          cache-dependency-path: apps/sensor/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Install Android build dependencies
+        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0' 'ndk;27.1.12297006' 'cmake;3.22.1'
+      - run: npm install --global npm@10.9.7
+      - run: npm ci
+      - run: npm run prebuild:android
+      - run: npm run build:android:offline
+      - run: npm run verify:android:offline
+      - name: Publish APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk veymur-sensor.apk
+          gh release create "$RELEASE_TAG" veymur-sensor.apk --verify-tag --generate-notes

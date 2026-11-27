@@ -39,7 +39,7 @@ Diagnostic exports are not encrypted and include coordinates if recorded. Sharin
 Requires JDK 21, Android SDK Platform 35, Build Tools 35.0.0, platform-tools, and access to Maven/JitPack. Specify the Android SDK through `ANDROID_HOME` or the ignored `local.properties` file.
 
 ```bash
-cd platform/apps/sensor-stage0
+cd apps/sensor-stage0
 ./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
 ```
 
