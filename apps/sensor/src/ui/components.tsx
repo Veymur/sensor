@@ -13,7 +13,7 @@ import {
 import { Icon, type IconName } from "./Icon";
 import { Sheet } from "./Sheet";
 import { useTheme } from "./Theme";
-import { H1 } from "./Typography";
+import { H1, Unit } from "./Typography";
 import { fonts, radius, spacing } from "./tokens";
 
 /** Map weight to a bundled static face; do not fake weights with a missing face. */
@@ -462,6 +462,52 @@ export function Detail({
   );
 }
 
+export type StatReading = { value: string; unit: string } | { text: string };
+
+export function Stat({
+  title,
+  reading,
+  note,
+}: {
+  title: string;
+  reading: StatReading;
+  note?: string;
+}) {
+  const { colors } = useTheme();
+  const spoken =
+    "text" in reading ? reading.text : `${reading.value} ${reading.unit}`;
+  return (
+    <View
+      accessible
+      accessibilityLabel={`${title}: ${spoken}${note ? `. ${note}` : ""}`}
+      style={styles.stat}
+    >
+      <Text style={[styles.statSmall, { color: colors["ink-3"] }]}>
+        {title}
+      </Text>
+      {"text" in reading ? (
+        <Text style={[styles.statText, { color: colors["ink-2"] }]}>
+          {reading.text}
+        </Text>
+      ) : (
+        <View style={styles.statValueRow}>
+          <Text style={[styles.statValue, { color: colors.ink }]}>
+            {reading.value}
+          </Text>
+          <Unit size={15} style={styles.statUnit}>
+            {reading.unit}
+          </Unit>
+        </View>
+      )}
+      {note && (
+        <Text style={[styles.statSmall, { color: colors["ink-3"] }]}>
+          {note}
+        </Text>
+      )}
+    </View>
+  );
+}
+
 export type BannerTone = "neutral" | "tide" | "ember" | "dusk";
 
 export function Banner({
@@ -884,6 +930,28 @@ export function TextField({
 }
 
 const styles = StyleSheet.create({
+  stat: { gap: 2 },
+  statSmall: {
+    fontFamily: fonts.ui,
+    fontSize: 14,
+    lineHeight: 21.7,
+  },
+  statText: {
+    fontFamily: fonts.ui,
+    fontSize: 16,
+    lineHeight: 24.8,
+  },
+  statValueRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+  },
+  statValue: {
+    fontFamily: fonts.uiSemibold,
+    fontSize: 30,
+    lineHeight: 33,
+    letterSpacing: -0.6,
+  },
+  statUnit: { marginLeft: 4 },
   card: {
     padding: spacing.gutter,
     gap: spacing.gutter * 0.8,

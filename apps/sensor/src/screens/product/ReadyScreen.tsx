@@ -17,7 +17,13 @@ import {
   Toggle,
   Warning,
 } from "../../ui/components";
-import { ContourArt } from "../../ui/Contours";
+import { LiveContourArt } from "../../ui/Contours";
+import { usePulseBeat } from "../../ui/usePulseBeat";
+import {
+  readyContourEnergy,
+  readyContourPhaseStep,
+  readyContourRestingEnergy,
+} from "../../product/pulseMotion";
 import { Icon } from "../../ui/Icon";
 import { AppBar, Screen } from "../../ui/Screen";
 import { useTheme } from "../../ui/Theme";
@@ -121,6 +127,14 @@ export function ReadyScreen({
     );
     return () => clearTimeout(timer);
   }, [routeToast]);
+  const pulseBeat = usePulseBeat(
+    {
+      hr: snapshot?.hr ?? null,
+      hrAgeMs: snapshot?.hrAgeMs ?? null,
+      hrStatus: snapshot?.hrStatus ?? "missing",
+    },
+    snapshot?.connectedDeviceId != null,
+  );
   if (!snapshot) return null;
   const busy = pending !== null;
   const connected = snapshot.connectedDeviceId !== null;
@@ -276,14 +290,20 @@ export function ReadyScreen({
             top: (stageHeight - artSize) / 2,
           }}
         >
-          <ContourArt
+          <LiveContourArt
             rings={9}
             baseR={110}
             gap={15}
             size={560}
             seed={14}
             wobble={0.07}
-            energy={0.7}
+            beatCount={pulseBeat.count}
+            phaseStep={readyContourPhaseStep}
+            energy={
+              pulseBeat.bpm === null
+                ? readyContourRestingEnergy
+                : readyContourEnergy(pulseBeat.bpm)
+            }
           />
         </View>
         <View style={{ width: discSize, height: discSize }}>

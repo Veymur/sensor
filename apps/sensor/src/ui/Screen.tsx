@@ -207,9 +207,14 @@ export function TabBar({ items }: { items: readonly TabBarItem[] }) {
         >
           {item.icon && (
             <View
+              collapsable={false}
               style={[
                 styles.tabIcon,
-                item.active && { backgroundColor: colors["tide-wash"] },
+                {
+                  backgroundColor: item.active
+                    ? colors["tide-wash"]
+                    : "transparent",
+                },
               ]}
             >
               {item.icon}

@@ -370,6 +370,10 @@ test("formatting keeps unknown values as text and uses the selected units", () =
   assert.equal(m.formatDistance(3200, "metric"), "3.2 km");
   assert.equal(m.formatDistance(1609.344, "imperial"), "1.0 mi");
   assert.equal(m.formatDistance(1250, "metric"), "1.3 km");
+  assert.equal(m.distanceParts(3200, "metric").value, "3.2");
+  assert.equal(m.distanceParts(3200, "metric").unit, "km");
+  assert.equal(m.distanceParts(1609.344, "imperial").value, "1.0");
+  assert.equal(m.distanceParts(1609.344, "imperial").unit, "mi");
   assert.equal(m.formatPercent(0.914), "91%");
   assert.equal(m.formatAge(null), "No reading yet");
   assert.equal(m.formatAge(500), "Updated just now");

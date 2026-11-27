@@ -456,10 +456,17 @@ export function formatDuration(ms: number): string {
   if (minutes < 60) return `${minutes} min`;
   return `${Math.floor(minutes / 60)} h ${pad(minutes % 60)} min`;
 }
-export function formatDistance(meters: number, units: Units): string {
+export function distanceParts(
+  meters: number,
+  units: Units,
+): { value: string; unit: string } {
   return units === "imperial"
-    ? `${(meters / 1609.344).toFixed(1)} mi`
-    : `${(meters / 1000).toFixed(1)} km`;
+    ? { value: (meters / 1609.344).toFixed(1), unit: "mi" }
+    : { value: (meters / 1000).toFixed(1), unit: "km" };
+}
+export function formatDistance(meters: number, units: Units): string {
+  const { value, unit } = distanceParts(meters, units);
+  return `${value} ${unit}`;
 }
 export function liveDistanceLabel(
   distanceM: number | null,

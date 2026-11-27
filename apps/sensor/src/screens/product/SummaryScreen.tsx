@@ -3,9 +3,9 @@ import { StyleSheet, View, useWindowDimensions } from "react-native";
 import {
   Action,
   Card,
-  Detail,
   Dialog,
   Label,
+  Stat,
   Status,
   Warning,
 } from "../../ui/components";
@@ -24,8 +24,8 @@ import type {
 import {
   boundsFromRanges,
   formatClock,
+  distanceParts,
   formatDateTime,
-  formatDistance,
   formatPercent,
   formatTime,
   hrSampleFromRecord,
@@ -226,6 +226,7 @@ export function SummaryScreen({
   });
   const duration = summary?.active_duration_ms ?? session.recorded_active_ms;
   const durationLabel = formatClock(duration).replace(/^00:/, "");
+  const statCellStyle = largeText ? undefined : styles.statCell;
   const summaryAppBar = (
     <AppBar
       title="Session summary"
@@ -281,57 +282,53 @@ export function SummaryScreen({
       )}
       {summary && (
         <Card variant="flat" style={styles.statsCard}>
-          <View style={styles.statGrid}>
-            <View style={[styles.statCell, largeText && styles.statCellLarge]}>
-              <Detail
+          <View style={[styles.statRow, largeText && styles.statRowLarge]}>
+            <View style={statCellStyle}>
+              <Stat
                 title="Distance"
-                value={
-                  summary.gps_distance_m === null
-                    ? session.route_requested
-                      ? "Not available"
-                      : "Off"
-                    : formatDistance(summary.gps_distance_m, units)
-                }
-                note={
-                  summary.gps_distance_m === null && session.route_requested
-                    ? "No usable route segments were recorded."
-                    : summary.gps_distance_m !== null
-                      ? "Usable route segments only."
-                      : "Route was not requested."
+                reading={
+                  summary.gps_distance_m !== null
+                    ? distanceParts(summary.gps_distance_m, units)
+                    : session.route_requested
+                      ? { text: "Not available" }
+                      : { text: "—" }
                 }
               />
             </View>
-            <View style={[styles.statCell, largeText && styles.statCellLarge]}>
-              <Detail
+            <View style={statCellStyle}>
+              <Stat
                 title="Average pulse"
-                value={
+                reading={
                   summary.average_hr_bpm === null
-                    ? "Not available"
-                    : `${Math.round(summary.average_hr_bpm)} bpm`
+                    ? { text: "Not available" }
+                    : {
+                        value: String(Math.round(summary.average_hr_bpm)),
+                        unit: "bpm",
+                      }
                 }
                 note={
                   summary.average_hr_bpm === null
-                    ? "No usable pulse in this session."
+                    ? undefined
                     : "Usable part of the session"
                 }
               />
             </View>
-            <View style={[styles.statCell, largeText && styles.statCellLarge]}>
-              <Detail
+          </View>
+          <View style={[styles.statRow, largeText && styles.statRowLarge]}>
+            <View style={statCellStyle}>
+              <Stat
                 title="Cadence"
-                value="Not available"
-                note="This sensor does not report cadence."
+                reading={{ text: "Not available from this sensor" }}
               />
             </View>
-            <View style={[styles.statCell, largeText && styles.statCellLarge]}>
-              <Detail
+            <View style={statCellStyle}>
+              <Stat
                 title="Route"
-                value={session.route_requested ? "Recorded" : "Not recorded"}
-                note={
-                  session.route_requested
-                    ? "On this phone · usable segments only"
-                    : undefined
-                }
+                reading={{
+                  text: session.route_requested
+                    ? "Recorded on this phone"
+                    : "Not recorded",
+                }}
               />
             </View>
           </View>
@@ -477,18 +474,16 @@ const styles = StyleSheet.create({
     fontSize: 48,
     lineHeight: 50,
   },
-  statsCard: { padding: 20 },
-  statGrid: {
+  statsCard: { padding: 20, gap: 16 },
+  statRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 20,
+    gap: 16,
+  },
+  statRowLarge: {
+    flexDirection: "column",
   },
   statCell: {
-    flexBasis: "47%",
-    flexGrow: 1,
-    minWidth: 140,
-  },
-  statCellLarge: {
-    flexBasis: "100%",
+    flex: 1,
+    minWidth: 0,
   },
 });

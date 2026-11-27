@@ -10,7 +10,7 @@ import {
   Mark,
   Warning,
 } from "../../ui/components";
-import { ContourArt } from "../../ui/Contours";
+import { LiveContourArt } from "../../ui/Contours";
 import { Icon } from "../../ui/Icon";
 import {
   stableHeartRateScale,
@@ -22,6 +22,7 @@ import { AppBar, Screen } from "../../ui/Screen";
 import { useTheme } from "../../ui/Theme";
 import { Caption, Eyebrow, Mono, PulseNumber, Unit } from "../../ui/Typography";
 import { fonts } from "../../ui/tokens";
+import { useBeatEmphasis, usePulseBeat } from "../../ui/usePulseBeat";
 import { useProduct } from "../../product/ProductContext";
 import { localDataClient } from "../../recorder/LocalDataClient";
 import {
@@ -42,6 +43,11 @@ import {
   sessionRouteUnavailable,
 } from "../../recorder/routeAvailability";
 import { hrReplayEnabled } from "../../dev/hrReplay";
+import {
+  sessionContourEnergy,
+  sessionContourPhaseStep,
+  sessionContourRestingEnergy,
+} from "../../product/pulseMotion";
 import { OpenBluetoothSettingsAction, OpenSettingsAction } from "./shared";
 
 function useSessionRanges(
@@ -111,6 +117,8 @@ function useStableHeartRateScale(
   if (next !== scale) setScale(next);
   return next;
 }
+
+const pulseArtOverflow = 40;
 
 const titles = {
   recording: "Recording",
@@ -220,6 +228,15 @@ export function SessionScreen() {
     ? { min: activeBounds.from, max: activeBounds.to }
     : null;
   const liveScale = useStableHeartRateScale(liveValues, liveBand);
+  const pulseBeat = usePulseBeat(
+    {
+      hr: snapshot?.hr ?? null,
+      hrAgeMs: snapshot?.hrAgeMs ?? null,
+      hrStatus: snapshot?.hrStatus ?? "missing",
+    },
+    state === "recording",
+  );
+  const pulseEmphasized = useBeatEmphasis(pulseBeat.count);
   if (!snapshot) return null;
   const busy = pending !== null;
   const interrupted = state === "interrupted";
@@ -307,22 +324,31 @@ export function SessionScreen() {
         />
       }
       actions={actions}
+      contentContainerStyle={styles.content}
     >
       <View style={styles.pulseStage}>
         <View pointerEvents="none" style={styles.pulseArt}>
-          <ContourArt
+          <LiveContourArt
             rings={9}
             baseR={56}
             gap={13}
             size={360}
             seed={7}
             wobble={0.13}
-            energy={0.8}
+            beatCount={pulseBeat.count}
+            phaseStep={sessionContourPhaseStep}
+            energy={
+              pulseBeat.bpm === null
+                ? sessionContourRestingEnergy
+                : sessionContourEnergy(pulseBeat.bpm)
+            }
           />
         </View>
         {fresh ? (
           <>
-            <PulseNumber state={paused ? "stale" : "fresh"}>
+            <PulseNumber
+              state={paused ? "stale" : pulseEmphasized ? "beat" : "fresh"}
+            >
               {snapshot.hr}
             </PulseNumber>
             <Unit size={15}>{paused ? "bpm · not recording" : "bpm"}</Unit>
@@ -531,6 +557,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
+  content: {
+    paddingTop: pulseArtOverflow,
+  },
   pulseStage: {
     minHeight: 264,
     alignItems: "center",
@@ -539,9 +568,9 @@ const styles = StyleSheet.create({
   },
   pulseArt: {
     position: "absolute",
-    top: -40,
+    top: -pulseArtOverflow,
     right: -24,
-    bottom: -40,
+    bottom: -pulseArtOverflow,
     left: -24,
   },
   absentPulse: {

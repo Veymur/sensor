@@ -5,7 +5,16 @@ const config: ExpoConfig = {
   slug: 'veymur-sensor',
   version: '0.0.1',
   platforms: ['android'],
-  android: { package: 'com.veymur.sensor', allowBackup: false },
+  icon: './assets/icon.png',
+  android: {
+    package: 'com.veymur.sensor',
+    allowBackup: false,
+    adaptiveIcon: {
+      foregroundImage: './assets/adaptive-icon.png',
+      monochromeImage: './assets/monochrome-icon.png',
+      backgroundColor: '#0B6A63',
+    },
+  },
   plugins: [
     'expo-dev-client',
     ['expo-build-properties', {
